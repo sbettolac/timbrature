@@ -1,8 +1,8 @@
 // Tiene pronta l'app per aprirla subito. Prova sempre prima la versione online,
 // cosi' gli aggiornamenti arrivano da soli. Le timbrature non passano da qui.
-const CACHE = 'timbrature-v1';
+const CACHE = 'timbrature-v2';
 const FILES = ['./', './index.html', './app.js', './config.js', './styles.css',
-               './manifest.webmanifest', './icone/icona-192.png'];
+               './manifest.webmanifest', './icone/icona-192.png', './icone/logo-marcos.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

@@ -334,7 +334,7 @@ async function viewLogin() {
 
   UI.setContent(`
     <div class="login-page">
-      <img class="login-logo-img" src="icone/icona-192.png" alt="" width="84" height="84">
+      <img class="login-logo-img" src="icone/logo-marcos.png" alt="The Marcos Pub">
       <h1 class="login-title">Sistema Timbrature</h1>
       <p class="login-subtitle">Accedi con username e PIN</p>
       <div class="login-card">

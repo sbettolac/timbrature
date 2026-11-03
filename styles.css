@@ -203,7 +203,7 @@ a { color: var(--primary); }
   justify-content: center; padding: 24px;
   background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
 }
-.login-logo-img { border-radius: 20px; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.login-logo-img { width: min(290px, 82vw); height: auto; margin-bottom: 18px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
 .login-title {
   color: #fff; font-size: 1.4rem; font-weight: 700;
   margin-bottom: 4px; letter-spacing: .5px;
