@@ -1,21 +1,21 @@
 /* ─── CSS Variables ─────────────────────────────────────────────────────── */
 :root {
-  --primary:        #1976d2;
-  --primary-dark:   #115293;
-  --primary-light:  #bbdefb;
-  --success:        #4caf50;
-  --success-bg:     #e8f5e9;
-  --error:          #f44336;
-  --error-bg:       #ffebee;
-  --warning:        #ff9800;
-  --warning-bg:     #fff3e0;
-  --info:           #2196f3;
-  --info-bg:        #e3f2fd;
-  --bg:             #f5f7fa;
+  --primary:        #5e171a;
+  --primary-dark:   #000000;
+  --primary-light:  #e8d5d6;
+  --success:        #2e6b45;
+  --success-bg:     #e3efe7;
+  --error:          #a3262b;
+  --error-bg:       #f7e4e5;
+  --warning:        #8a5200;
+  --warning-bg:     #f8ecd9;
+  --info:           #3a3a3a;
+  --info-bg:        #e4e4e4;
+  --bg:             #f0f0f0;
   --surface:        #ffffff;
-  --text:           #212121;
-  --text-secondary: #757575;
-  --border:         #e0e0e0;
+  --text:           #000000;
+  --text-secondary: #555555;
+  --border:         #d6d6d6;
   --shadow:         0 2px 8px rgba(0,0,0,.12);
   --shadow-lg:      0 4px 20px rgba(0,0,0,.18);
   --radius:         12px;
@@ -51,7 +51,7 @@ a { color: var(--primary); }
   top: 0; left: 0; right: 0;
   height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
   padding-top: env(safe-area-inset-top, 0px);
-  background: var(--primary);
+  background: var(--primary-dark);
   color: #fff;
   display: flex;
   align-items: center;
@@ -137,10 +137,10 @@ a { color: var(--primary); }
   animation: slideDown .25s ease;
 }
 @keyframes slideDown { from { opacity:0; transform: translateX(-50%) translateY(-12px); } }
-.notification.info    { background: var(--info-bg);    color: #0d47a1; }
-.notification.success { background: var(--success-bg); color: #1b5e20; }
-.notification.error   { background: var(--error-bg);   color: #b71c1c; }
-.notification.warning { background: var(--warning-bg); color: #e65100; }
+.notification.info    { background: var(--info-bg);    color: var(--text); }
+.notification.success { background: var(--success-bg); color: var(--success); }
+.notification.error   { background: var(--error-bg);   color: var(--error); }
+.notification.warning { background: var(--warning-bg); color: var(--warning); }
 
 /* ─── Cards ─────────────────────────────────────────────────────────────── */
 .card {
@@ -257,7 +257,7 @@ a { color: var(--primary); }
 }
 .timbra-btn:active { transform: scale(.95); box-shadow: 0 2px 10px rgba(0,0,0,.2); }
 .timbra-btn.entrata { background: var(--success); color: #fff; }
-.timbra-btn.uscita  { background: var(--error);   color: #fff; }
+.timbra-btn.uscita  { background: var(--primary); color: #fff; }
 .timbra-btn .timbra-icon { font-size: 2.5rem; }
 .timbra-btn .timbra-text { font-size: .95rem; letter-spacing: .5px; }
 
@@ -300,9 +300,9 @@ a { color: var(--primary); }
 }
 .cal-day:active { transform: scale(.92); }
 .cal-day.empty  { cursor: default; }
-.cal-day.ok     { background: var(--success-bg); border-color: var(--success); color: #1b5e20; }
-.cal-day.anomaly{ background: var(--error-bg);   border-color: var(--error);   color: #b71c1c; }
-.cal-day.open   { background: var(--warning-bg); border-color: var(--warning); color: #e65100; }
+.cal-day.ok     { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+.cal-day.anomaly{ background: var(--error-bg);   border-color: var(--error);   color: var(--error); }
+.cal-day.open   { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
 .cal-day.nowork { background: var(--bg);         border-color: var(--border);  color: var(--text-secondary); }
 .cal-day.today  { font-weight: 700; box-shadow: 0 0 0 2px var(--primary); }
 .cal-day-num  { font-size: .82rem; font-weight: 600; }
@@ -435,7 +435,7 @@ tr:hover td { background: var(--bg); }
   background: var(--warning-bg); border: 1.5px solid var(--warning);
   border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px;
 }
-.alert-title { font-weight: 700; font-size: .9rem; color: #e65100; }
+.alert-title { font-weight: 700; font-size: .9rem; color: var(--warning); }
 .alert-text  { font-size: .84rem; margin-top: 4px; color: var(--text); }
 .alert-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .link-btn {
