@@ -83,7 +83,7 @@ function addDays(dateStr, days) {
 function workToday() {
   const p      = romeNow();
   const date   = `${p.year}-${p.month}-${p.day}`;
-  const cambio = Number(State.user?.oraCambioGiornata ?? 5);
+  const cambio = Number(State.user?.oraCambioGiornata ?? 4);
   return Number(p.hour) < cambio ? addDays(date, -1) : date;
 }
 
@@ -170,7 +170,8 @@ const VIEWS = {
   admin_timbrature:  viewAdminTimbrature,
   admin_mese:        viewAdminMese,
   admin_config:      viewAdminConfig,
-  admin_registro:    viewAdminRegistro
+  admin_registro:    viewAdminRegistro,
+  resp_giornata:     viewRespGiornata
 };
 
 async function navigate(view, params = {}) {
@@ -181,7 +182,10 @@ async function navigate(view, params = {}) {
     await fn(params);
     UI.setActiveNav(view);
   } catch (e) {
-    if (/[Ss]essione|[Aa]utent/.test(e.message)) {
+    if (/^Accesso negato/.test(e.message) && view !== 'home') {
+      // Il ruolo puo' essere cambiato mentre l'app era aperta.
+      await navigate('home');
+    } else if (/[Ss]essione|[Aa]utent/.test(e.message)) {
       State.clearSession();
       if (view !== 'login') {
         await navigate('login');
@@ -215,6 +219,7 @@ function _setupShell(ruolo) {
 
   document.getElementById('admin-nav').classList.toggle('hidden', ruolo !== 'admin');
   document.getElementById('bottom-nav').classList.toggle('hidden', ruolo === 'admin');
+  document.getElementById('nav-squadra').classList.toggle('hidden', ruolo !== 'responsabile');
 }
 
 async function doLogout() {
@@ -443,6 +448,15 @@ async function viewHome() {
     gasCall('getMyStatus', State.token),
     gasCall('getMyHoursSummary', State.token)
   ]);
+
+  // L'accesso resta aperto a lungo: ruolo e orari si riallineano qui.
+  if (status.ruolo !== State.user.ruolo ||
+      status.oraCambioGiornata !== State.user.oraCambioGiornata) {
+    State.user.ruolo = status.ruolo;
+    State.user.oraCambioGiornata = status.oraCambioGiornata;
+    State.setSession(State.token, State.user);
+    _setupShell(status.ruolo);
+  }
 
   const stato  = status.stato;
   const ultima = status.ultimaTimbratura;
@@ -856,6 +870,94 @@ async function viewStorico(params = {}) {
   });
 }
 
+/* ─── Responsabile: giornata della squadra ──────────────────────────────── */
+
+async function viewRespGiornata() {
+  UI.setTitle('Squadra');
+  const g = await gasCall('respGetGiornata', State.token);
+  window._squadra = g.persone;
+
+  const stati = {
+    IN:       ['chip-green',  'In turno'],
+    OUT:      ['chip-gray',   'Fuori turno'],
+    NONE:     ['chip-gray',   'Non registrato'],
+    VERIFICA: ['chip-orange', 'Da verificare']
+  };
+
+  const cards = g.persone.map(p => {
+    const [cls, label] = stati[p.stato] || stati.NONE;
+    const orari = p.timbrature.length
+      ? p.timbrature.map(t =>
+          `<span class="chip ${t.tipo === 'IN' ? 'chip-green' : 'chip-red'}">${t.tipo === 'IN' ? 'Entrata' : 'Uscita'} ${UI.escHtml(t.ora)}</span>`
+        ).join(' ')
+      : '<span class="text-secondary">Nessuna timbratura</span>';
+    return `
+      <div class="card">
+        <div class="flex-between gap-8">
+          <span class="fw-600">${UI.escHtml(p.nome)}</span>
+          <span class="chip ${cls}">${label}</span>
+        </div>
+        <div class="team-times">${orari}</div>
+        ${p.bloccato
+          ? '<div class="form-hint">Segnalazione in attesa dell\'amministratore.</div>'
+          : `<button class="btn btn-secondary btn-sm"
+               onclick="openRespInsert('${UI.escHtml(p.userId)}')">
+               Inserisci ${p.prossimoTipo === 'IN' ? 'entrata' : 'uscita'}
+             </button>`}
+      </div>`;
+  }).join('');
+
+  UI.setContent(`
+    <div class="card">
+      <div class="card-title">Giornata del ${formatDay(g.giornata)}</div>
+      <div class="form-hint">Puoi vedere e completare solo la giornata in corso.</div>
+    </div>
+    ${cards || '<div class="card"><div class="empty-state"><div class="empty-text">Nessun collega attivo</div></div></div>'}
+  `);
+}
+
+function openRespInsert(userId) {
+  const p = (window._squadra || []).find(x => x.userId === userId);
+  if (!p) return;
+  const parola = p.prossimoTipo === 'IN' ? 'entrata' : 'uscita';
+  UI.showModal(`
+    <div class="modal-title">Inserisci ${parola}</div>
+    <div class="mb-16">Per <strong>${UI.escHtml(p.nome)}</strong>. Il tuo nome resterà registrato.</div>
+    <div class="form-group">
+      <label class="form-label" for="rs-ora">Data e ora</label>
+      <input class="form-control" type="datetime-local" id="rs-ora"
+             min="${UI.escHtml(p.ultimaLocal)}" value="${romeInputNow()}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="rs-nota">Nota (facoltativa)</label>
+      <input class="form-control" id="rs-nota" maxlength="200">
+    </div>
+    <div id="rs-error" class="login-error hidden"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="UI.hideModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="_doRespInsert('${UI.escHtml(p.userId)}','${p.prossimoTipo}')">Inserisci</button>
+    </div>
+  `, true);
+}
+
+async function _doRespInsert(userId, tipo) {
+  const errEl = document.getElementById('rs-error');
+  errEl.classList.add('hidden');
+  try {
+    await gasCall('respInsertTimbratura', State.token, {
+      userId, tipo,
+      timestamp: document.getElementById('rs-ora').value,
+      nota:      document.getElementById('rs-nota').value.trim()
+    });
+    UI.hideModal();
+    await navigate('resp_giornata');
+    UI.showNotification(tipo === 'IN' ? 'Entrata inserita' : 'Uscita inserita', 'success');
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
 /* ─── Admin: dashboard ──────────────────────────────────────────────────── */
 
 async function viewAdminDashboard() {
@@ -983,6 +1085,7 @@ async function adminSegnalazione(id, applica) {
 /* ─── Admin: utenti ─────────────────────────────────────────────────────── */
 
 const GIORNI = ['LUN','MAR','MER','GIO','VEN','SAB','DOM'];
+const RUOLI  = { user: 'Dipendente', responsabile: 'Responsabile', admin: 'Amministratore' };
 
 async function viewAdminUtenti() {
   UI.setTitle('Gestione Utenti');
@@ -994,7 +1097,7 @@ async function viewAdminUtenti() {
       <td>${UI.escHtml(u.nome)}</td>
       <td>${UI.escHtml(u.username)}</td>
       <td>${u.oreSettimanali ? UI.escHtml(u.oreSettimanali) + 'h' : '—'}</td>
-      <td><span class="chip ${u.ruolo === 'admin' ? 'chip-blue' : 'chip-gray'}">${UI.escHtml(u.ruolo)}</span></td>
+      <td><span class="chip ${u.ruolo === 'admin' ? 'chip-blue' : u.ruolo === 'responsabile' ? 'chip-orange' : 'chip-gray'}">${UI.escHtml(RUOLI[u.ruolo] || u.ruolo)}</span></td>
       <td><span class="chip ${u.attivo ? 'chip-green' : 'chip-red'}">${u.attivo ? 'Attivo' : 'Inattivo'}</span></td>
       <td class="td-actions">
         <button class="btn btn-secondary btn-sm" aria-label="Modifica" onclick="adminEditUser('${UI.escHtml(u.userId)}')">✏️</button>
@@ -1070,7 +1173,8 @@ function _userForm(u) {
       <div class="form-group">
         <label class="form-label" for="uf-ruolo">Ruolo *</label>
         <select class="form-control" id="uf-ruolo">
-          <option value="user" ${(!u || u.ruolo === 'user') ? 'selected' : ''}>Utente</option>
+          <option value="user" ${(!u || u.ruolo === 'user') ? 'selected' : ''}>Dipendente</option>
+          <option value="responsabile" ${u && u.ruolo === 'responsabile' ? 'selected' : ''}>Responsabile</option>
           <option value="admin" ${u && u.ruolo === 'admin' ? 'selected' : ''}>Amministratore</option>
         </select>
       </div>

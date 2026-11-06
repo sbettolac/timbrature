@@ -463,6 +463,8 @@ tr:hover td { background: var(--bg); }
 .coord-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .coord-row .form-group { min-width: 0; }
 
+.team-times { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; font-size: .86rem; }
+
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 .hidden        { display: none !important; }
 .text-center   { text-align: center; }

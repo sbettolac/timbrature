@@ -1,6 +1,6 @@
 // Tiene pronta l'app per aprirla subito. Prova sempre prima la versione online,
 // cosi' gli aggiornamenti arrivano da soli. Le timbrature non passano da qui.
-const CACHE = 'timbrature-v3';
+const CACHE = 'timbrature-v4';
 const FILES = ['./', './index.html', './app.js', './config.js', './styles.css',
                './manifest.webmanifest', './icone/icona-192.png', './icone/logo-marcos.png'];
 
