@@ -174,7 +174,11 @@ const VIEWS = {
   resp_giornata:     viewRespGiornata
 };
 
+let _colleghiTimer = null;
+
 async function navigate(view, params = {}) {
+  clearInterval(_colleghiTimer);
+  _colleghiTimer = null;
   UI.showLoading(true);
   try {
     const fn = VIEWS[view];
@@ -531,6 +535,8 @@ async function viewHome() {
         </button>
       </div>` : ''}
 
+    <div id="colleghi-box"></div>
+
     <div class="card">
       <div class="card-title">📊 Riepilogo ore</div>
       <div class="hours-row">
@@ -549,6 +555,61 @@ async function viewHome() {
     btn.disabled = true;
     _doTimbra(tipoProssimo, status.posizioneRichiesta);
   });
+
+  await caricaColleghi();
+  _colleghiTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') caricaColleghi();
+  }, 60000);
+}
+
+/* ─── Colleghi in servizio oggi ─────────────────────────────────────────── */
+
+async function caricaColleghi() {
+  const box = document.getElementById('colleghi-box');
+  if (!box) return;
+  let d;
+  try {
+    d = await gasCall('getColleghiOggi', State.token);
+  } catch (e) {
+    return; // l'elenco e' solo informativo: un errore non blocca la Home
+  }
+  if (!document.getElementById('colleghi-box')) return;
+  if (!d.attiva) { box.innerHTML = ''; return; }
+
+  const stati = {
+    IN:       ['chip-green',  'In turno'],
+    OUT:      ['chip-gray',   'Uscito'],
+    VERIFICA: ['chip-orange', 'Uscita mancante']
+  };
+
+  const righe = d.persone.map(p => {
+    const [cls, label] = stati[p.stato] || stati.OUT;
+    const orari = p.timbrature.map(t =>
+      `${t.tipo === 'IN' ? 'Entrata' : 'Uscita'} ${UI.escHtml(t.ora)}`).join(' · ');
+    return `
+      <div class="list-item">
+        <div class="list-body">
+          <div class="list-title">${UI.escHtml(p.nome)}</div>
+          <div class="list-sub">${orari}</div>
+        </div>
+        <span class="chip ${cls}">${label}</span>
+      </div>`;
+  }).join('');
+
+  const inTurno = d.persone.filter(p => p.stato === 'IN').length;
+
+  box.innerHTML = `
+    <div class="card">
+      <div class="flex-between mb-8">
+        <span class="card-title" style="margin:0">👥 In servizio oggi (${inTurno})</span>
+        <button class="btn btn-secondary btn-sm" id="btn-colleghi" aria-label="Aggiorna l'elenco">↻</button>
+      </div>
+      ${righe || '<div class="text-secondary">Nessun collega ha ancora timbrato oggi.</div>'}
+      <div class="form-hint">Aggiornato alle ${UI.escHtml(d.aggiornatoAlle)}
+        ${State.user?.ruolo === 'responsabile' ? ' · Per inserire timbrature apri Squadra.' : ''}</div>
+    </div>`;
+
+  document.getElementById('btn-colleghi').addEventListener('click', caricaColleghi);
 }
 
 function _hoursMini(label, worked, balance) {
@@ -1642,6 +1703,18 @@ async function viewAdminConfig() {
       </div>
 
       <div class="card">
+        <div class="card-title">👥 Colleghi in servizio</div>
+        <div class="form-group">
+          <label class="form-label" for="cfg-vistaColleghi">Elenco nella schermata Timbra</label>
+          <select class="form-control" id="cfg-vistaColleghi">
+            <option value="ON"  ${String(cfg.vistaColleghi ?? 'ON') !== 'OFF' ? 'selected' : ''}>Attivo: tutti vedono chi ha timbrato oggi</option>
+            <option value="OFF" ${String(cfg.vistaColleghi) === 'OFF' ? 'selected' : ''}>Disattivato</option>
+          </select>
+          <div class="form-hint">Mostra solo nome e orari della giornata in corso.</div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-title">⚙️ Turni e ore</div>
         ${campi.map(([key, label, hint]) => `
           <div class="form-group">
@@ -1680,7 +1753,8 @@ async function viewAdminConfig() {
       modoPosizione: document.getElementById('cfg-modoPosizione').value,
       latSede:       num('cfg-latSede'),
       lngSede:       num('cfg-lngSede'),
-      raggioMetri:   num('cfg-raggioMetri')
+      raggioMetri:   num('cfg-raggioMetri'),
+      vistaColleghi: document.getElementById('cfg-vistaColleghi').value
     };
     campi.forEach(([key]) => { cfgMap[key] = num(`cfg-${key}`); });
 
