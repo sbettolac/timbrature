@@ -250,7 +250,6 @@ function openMenu() {
   UI.showModal(`
     <div class="modal-title">Menu</div>
     <div class="menu-list">
-      <button class="btn btn-secondary btn-full" onclick="openChangePin()">🔑 Cambia il mio PIN</button>
       ${admin ? `
         <button class="btn btn-secondary btn-full" onclick="UI.hideModal();navigate('admin_config')">⚙️ Configurazione</button>
         <button class="btn btn-secondary btn-full" onclick="UI.hideModal();navigate('admin_registro')">📜 Registro attività</button>
@@ -261,40 +260,6 @@ function openMenu() {
       <button class="btn btn-secondary" onclick="UI.hideModal()">Chiudi</button>
     </div>
   `, true);
-}
-
-function openChangePin() {
-  UI.showModal(`
-    <div class="modal-title">🔑 Cambia il mio PIN</div>
-    <div class="form-group">
-      <label class="form-label" for="cp-old">PIN attuale</label>
-      <input class="form-control" type="password" id="cp-old" inputmode="numeric" maxlength="8">
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="cp-new">Nuovo PIN (4–8 cifre)</label>
-      <input class="form-control" type="password" id="cp-new" inputmode="numeric" maxlength="8">
-    </div>
-    <div id="cp-error" class="login-error hidden"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="UI.hideModal()">Annulla</button>
-      <button class="btn btn-primary" onclick="_doChangePin()">Salva</button>
-    </div>
-  `, true);
-}
-
-async function _doChangePin() {
-  const errEl = document.getElementById('cp-error');
-  errEl.classList.add('hidden');
-  try {
-    await gasCall('changePin', State.token,
-      document.getElementById('cp-old').value,
-      document.getElementById('cp-new').value);
-    UI.hideModal();
-    UI.showNotification('PIN aggiornato', 'success');
-  } catch (e) {
-    errEl.textContent = e.message;
-    errEl.classList.remove('hidden');
-  }
 }
 
 /* ─── Installazione ─────────────────────────────────────────────────────── */
